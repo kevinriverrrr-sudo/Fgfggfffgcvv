@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Удаление фона с фото - Background Remover</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Удаление фона с фотографий</h1>
+            <p class="subtitle">Загрузите фото и автоматически удалите фон за секунды</p>
+        </header>
+
+        <main>
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p class="upload-text">Нажмите или перетащите фото сюда</p>
+                    <p class="upload-hint">Поддерживаются форматы: JPG, PNG, WEBP</p>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+            </div>
+
+            <div class="processing-section" id="processingSection" style="display: none;">
+                <div class="spinner"></div>
+                <p class="processing-text">Обработка изображения...</p>
+                <p class="processing-hint">Это может занять несколько секунд</p>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="comparison">
+                    <div class="image-container">
+                        <h3>Оригинал</h3>
+                        <img id="originalImage" alt="Оригинальное изображение">
+                    </div>
+                    <div class="image-container">
+                        <h3>Без фона</h3>
+                        <img id="processedImage" alt="Изображение без фона">
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-primary" id="downloadBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Скачать результат
+                    </button>
+                    <button class="btn btn-secondary" id="newImageBtn">
+                        Загрузить новое фото
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Полностью бесплатно • Обработка на вашем устройстве • Конфиденциально</p>
+        </footer>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
