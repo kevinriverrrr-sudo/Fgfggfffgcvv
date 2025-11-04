@@ -229,10 +229,18 @@ function fillOrderForm(link, quantity = 100) {
   }
   
   if (filled) {
-    // Ждем немного и нажимаем кнопку
+    // Ждем немного и нажимаем кнопку (увеличено время для загрузки)
+    console.log('[LookSMM Auto-Fill] ⏳ Ждем 2 секунды перед поиском кнопки...');
     setTimeout(() => {
-      clickSubmitButton();
-    }, 1000);
+      const clicked = clickSubmitButton();
+      if (!clicked) {
+        // Пробуем еще раз через секунду
+        console.log('[LookSMM Auto-Fill] ⚠️ Первая попытка не удалась, пробуем снова...');
+        setTimeout(() => {
+          clickSubmitButton();
+        }, 1000);
+      }
+    }, 2000);
     
     return { success: true };
   } else {
@@ -241,9 +249,9 @@ function fillOrderForm(link, quantity = 100) {
   }
 }
 
-// Функция для нажатия кнопки "Получить" или "Submit"
+// Функция для нажатия кнопки "Получить" или "Submit" (УЛУЧШЕННАЯ ВЕРСИЯ)
 function clickSubmitButton() {
-  console.log('[LookSMM Auto-Fill] Ищем кнопку отправки...');
+  console.log('[LookSMM Auto-Fill] 🔍 Начинаем МЕГА-поиск синей кнопки "Получить"...');
   
   const buttonTexts = [
     'получить',
@@ -252,37 +260,129 @@ function clickSubmitButton() {
     'submit',
     'order',
     'send',
-    'добавить'
+    'добавить',
+    'оформить'
   ];
   
-  const buttons = document.querySelectorAll('button, input[type="submit"], a.btn, .button');
+  // СТРАТЕГИЯ 1: Поиск кнопок с текстом "получить" и синими классами
+  console.log('[LookSMM Auto-Fill] Стратегия 1: Поиск по тексту и синим классам...');
+  const blueButtonClasses = [
+    '.btn-primary',
+    '.btn-info', 
+    '.btn-blue',
+    '.btn-success',
+    'button.btn-primary',
+    'button.btn-info',
+    'a.btn-primary',
+    'a.btn-info'
+  ];
   
-  for (let button of buttons) {
-    if (button.offsetParent === null) continue; // Пропускаем невидимые кнопки
+  for (let className of blueButtonClasses) {
+    const buttons = document.querySelectorAll(className);
+    console.log(`[LookSMM Auto-Fill] Найдено ${buttons.length} кнопок с классом ${className}`);
+    
+    for (let button of buttons) {
+      if (button.offsetParent === null) continue;
+      
+      const buttonText = button.textContent.toLowerCase().trim();
+      console.log(`[LookSMM Auto-Fill] Проверяем кнопку: "${buttonText}"`);
+      
+      for (let text of buttonTexts) {
+        if (buttonText.includes(text)) {
+          console.log(`[LookSMM Auto-Fill] ✅ НАЙДЕНА! Синяя кнопка "${buttonText}" - НАЖИМАЕМ!`);
+          button.click();
+          return true;
+        }
+      }
+    }
+  }
+  
+  // СТРАТЕГИЯ 2: Поиск ВСЕХ кнопок и проверка текста
+  console.log('[LookSMM Auto-Fill] Стратегия 2: Поиск всех кнопок по тексту...');
+  const allButtons = document.querySelectorAll('button, input[type="submit"], a.btn, .btn, .button, [role="button"]');
+  console.log(`[LookSMM Auto-Fill] Всего найдено кнопок: ${allButtons.length}`);
+  
+  for (let button of allButtons) {
+    if (button.offsetParent === null) continue;
     
     const buttonText = button.textContent.toLowerCase().trim();
     const buttonValue = (button.value || '').toLowerCase().trim();
     
+    if (buttonText || buttonValue) {
+      console.log(`[LookSMM Auto-Fill] Проверяем: "${buttonText}" / "${buttonValue}"`);
+    }
+    
     for (let text of buttonTexts) {
       if (buttonText.includes(text) || buttonValue.includes(text)) {
-        console.log('[LookSMM Auto-Fill] Кнопка найдена, нажимаем...');
+        console.log(`[LookSMM Auto-Fill] ✅ НАЙДЕНА! Кнопка "${buttonText || buttonValue}" - НАЖИМАЕМ!`);
         button.click();
         return true;
       }
     }
   }
   
-  // Если не нашли, пробуем submit кнопки
+  // СТРАТЕГИЯ 3: Поиск по атрибуту type="submit"
+  console.log('[LookSMM Auto-Fill] Стратегия 3: Поиск submit кнопок...');
   const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"]');
+  console.log(`[LookSMM Auto-Fill] Найдено submit кнопок: ${submitButtons.length}`);
+  
   for (let button of submitButtons) {
     if (button.offsetParent !== null) {
-      console.log('[LookSMM Auto-Fill] Нажимаем submit кнопку...');
+      const buttonText = button.textContent.toLowerCase().trim();
+      console.log(`[LookSMM Auto-Fill] ✅ НАЙДЕНА submit кнопка "${buttonText}" - НАЖИМАЕМ!`);
       button.click();
       return true;
     }
   }
   
-  console.log('[LookSMM Auto-Fill] Кнопка отправки не найдена');
+  // СТРАТЕГИЯ 4: ЯДЕРНАЯ ОПЦИЯ - ищем любую видимую синюю кнопку
+  console.log('[LookSMM Auto-Fill] Стратегия 4: ЯДЕРНАЯ ОПЦИЯ - поиск любой синей кнопки...');
+  for (let button of allButtons) {
+    if (button.offsetParent === null) continue;
+    
+    // Проверяем стили кнопки
+    const computedStyle = window.getComputedStyle(button);
+    const bgColor = computedStyle.backgroundColor;
+    const color = computedStyle.color;
+    
+    // Проверяем, есть ли синий цвет (RGB значения содержат синий)
+    const isBlueish = bgColor.includes('rgb') && (
+      bgColor.includes('0, 123') || // Bootstrap primary
+      bgColor.includes('13, 110') || // Darker blue
+      bgColor.includes('23, 162') || // Light blue
+      bgColor.includes('52, 144') || // Medium blue
+      bgColor.match(/rgb\(\s*\d+,\s*\d+,\s*[2-9]\d+/) // Any blue-ish
+    );
+    
+    if (isBlueish) {
+      const buttonText = button.textContent.toLowerCase().trim();
+      console.log(`[LookSMM Auto-Fill] Найдена СИНЯЯ кнопка: "${buttonText}" (цвет: ${bgColor})`);
+      
+      // Если в тексте есть что-то про получение/заказ - жмём!
+      if (buttonText.length > 0 && buttonText.length < 50) {
+        console.log(`[LookSMM Auto-Fill] ✅ НАЖИМАЕМ синюю кнопку "${buttonText}"!`);
+        button.click();
+        return true;
+      }
+    }
+  }
+  
+  // СТРАТЕГИЯ 5: Последняя попытка - первая видимая кнопка на странице
+  console.log('[LookSMM Auto-Fill] Стратегия 5: Нажимаем первую видимую кнопку...');
+  for (let button of allButtons) {
+    if (button.offsetParent !== null && button.textContent.trim().length > 0) {
+      const buttonText = button.textContent.trim();
+      console.log(`[LookSMM Auto-Fill] ⚠️ Нажимаем первую попавшуюся кнопку: "${buttonText}"`);
+      button.click();
+      return true;
+    }
+  }
+  
+  console.log('[LookSMM Auto-Fill] ❌ КНОПКА НЕ НАЙДЕНА! Выводим все кнопки на странице:');
+  allButtons.forEach((btn, index) => {
+    console.log(`  Кнопка ${index + 1}: "${btn.textContent.trim()}" - видима: ${btn.offsetParent !== null}`);
+  });
+  
   return false;
 }
 

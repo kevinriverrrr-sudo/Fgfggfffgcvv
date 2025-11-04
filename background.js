@@ -39,8 +39,9 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
   
   // Проверяем, на странице ли мы заказа, и если да - заполняем форму
   if (details.url.includes('/order/free-service/') && data.pendingOrderLink) {
-    console.log('[LookSMM Auto-Fill] На странице заказа, заполняем форму...');
+    console.log('[LookSMM Auto-Fill] 🎯 На странице заказа, заполняем форму...');
     
+    // Увеличено время ожидания для полной загрузки страницы
     setTimeout(() => {
       chrome.tabs.sendMessage(details.tabId, {
         action: 'fillOrderForm',
@@ -48,12 +49,22 @@ chrome.webNavigation.onCompleted.addListener(async (details) => {
         quantity: 100
       }, (response) => {
         if (response && response.success) {
-          console.log('[LookSMM Auto-Fill] Форма заказа заполнена');
+          console.log('[LookSMM Auto-Fill] ✅ Форма заказа заполнена и отправлена!');
           // Очищаем оставшиеся данные
           chrome.storage.local.remove(['pendingOrderLink', 'pendingOrderService']);
+        } else {
+          console.log('[LookSMM Auto-Fill] ⚠️ Проблема с заполнением формы, повторяем...');
+          // Повторная попытка через 2 секунды
+          setTimeout(() => {
+            chrome.tabs.sendMessage(details.tabId, {
+              action: 'fillOrderForm',
+              link: data.pendingOrderLink,
+              quantity: 100
+            });
+          }, 2000);
         }
       });
-    }, 1500);
+    }, 2500);
   }
 });
 
