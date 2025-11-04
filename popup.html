@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LZT Market Toolkit</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🛠️ LZT Market Toolkit</h1>
+      <p class="subtitle">Инструменты для покупателей и продавцов</p>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="buyer">
+        <span class="icon">🛒</span>
+        Покупатель
+      </button>
+      <button class="tab-btn" data-tab="seller">
+        <span class="icon">💼</span>
+        Продавец
+      </button>
+      <button class="tab-btn" data-tab="settings">
+        <span class="icon">⚙️</span>
+        Настройки
+      </button>
+    </div>
+
+    <!-- Buyer Section -->
+    <div class="tab-content active" id="buyer">
+      <div class="section">
+        <h2>🔍 Анализ продавца</h2>
+        <div class="form-group">
+          <input type="text" id="sellerUsername" placeholder="Имя продавца или ID" class="input-field">
+          <button id="analyzeSeller" class="btn btn-primary">Анализировать</button>
+        </div>
+        <div id="sellerAnalysis" class="result-box"></div>
+      </div>
+
+      <div class="section">
+        <h2>📥 Скачивание товаров</h2>
+        <div class="form-group">
+          <input type="text" id="productUrl" placeholder="URL товара или ID" class="input-field">
+          <button id="downloadProduct" class="btn btn-success">Скачать товар</button>
+        </div>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="autoFormat" checked>
+            Автоматическое форматирование
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>📊 Статистика покупок</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Всего покупок</div>
+            <div class="stat-value" id="totalPurchases">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Общая сумма</div>
+            <div class="stat-value" id="totalSpent">0₽</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Средний чек</div>
+            <div class="stat-value" id="avgPurchase">0₽</div>
+          </div>
+        </div>
+        <button id="refreshBuyerStats" class="btn btn-secondary">Обновить</button>
+      </div>
+
+      <div class="section">
+        <h2>🔔 Отслеживание цен</h2>
+        <button id="priceTracker" class="btn btn-info">Добавить товар в отслеживание</button>
+        <div id="trackedProducts" class="tracked-list"></div>
+      </div>
+    </div>
+
+    <!-- Seller Section -->
+    <div class="tab-content" id="seller">
+      <div class="section">
+        <h2>💰 Финансовая статистика</h2>
+        <div class="stats-grid">
+          <div class="stat-card success">
+            <div class="stat-label">Прибыль</div>
+            <div class="stat-value" id="totalProfit">0₽</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-label">Убытки</div>
+            <div class="stat-value" id="totalLoss">0₽</div>
+          </div>
+          <div class="stat-card info">
+            <div class="stat-label">Чистая прибыль</div>
+            <div class="stat-value" id="netProfit">0₽</div>
+          </div>
+        </div>
+        <button id="calculateFinances" class="btn btn-primary">Рассчитать</button>
+      </div>
+
+      <div class="section">
+        <h2>📈 Продажи</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Всего продаж</div>
+            <div class="stat-value" id="totalSales">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Активные товары</div>
+            <div class="stat-value" id="activeProducts">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Рейтинг</div>
+            <div class="stat-value" id="sellerRating">0</div>
+          </div>
+        </div>
+        <button id="refreshSellerStats" class="btn btn-secondary">Обновить статистику</button>
+      </div>
+
+      <div class="section">
+        <h2>📦 Управление товарами</h2>
+        <div class="form-group">
+          <button id="bulkEdit" class="btn btn-warning">Массовое редактирование</button>
+          <button id="exportProducts" class="btn btn-info">Экспорт товаров</button>
+        </div>
+        <div class="form-group">
+          <button id="autoReply" class="btn btn-success">Авто-ответы</button>
+          <button id="priceOptimizer" class="btn btn-primary">Оптимизация цен</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>📊 Аналитика конкурентов</h2>
+        <div class="form-group">
+          <input type="text" id="competitorCategory" placeholder="Категория товара" class="input-field">
+          <button id="analyzeCompetitors" class="btn btn-primary">Анализировать</button>
+        </div>
+        <div id="competitorAnalysis" class="result-box"></div>
+      </div>
+
+      <div class="section">
+        <h2>⏰ Автоматизация</h2>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="autoRestock">
+            Автоматическое пополнение товаров
+          </label>
+          <label>
+            <input type="checkbox" id="autoPriceUpdate">
+            Автообновление цен по рынку
+          </label>
+          <label>
+            <input type="checkbox" id="autoAnswers">
+            Автоматические ответы на вопросы
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Section -->
+    <div class="tab-content" id="settings">
+      <div class="section">
+        <h2>🔐 API настройки</h2>
+        <div class="form-group">
+          <label for="apiKey">API ключ LZT Market:</label>
+          <input type="password" id="apiKey" placeholder="Введите ваш API ключ" class="input-field">
+          <button id="saveApiKey" class="btn btn-success">Сохранить</button>
+        </div>
+        <p class="hint">💡 Получите API ключ в настройках вашего профиля на lzt.market</p>
+      </div>
+
+      <div class="section">
+        <h2>🎨 Внешний вид</h2>
+        <div class="form-group">
+          <label for="theme">Тема:</label>
+          <select id="theme" class="input-field">
+            <option value="dark">Тёмная</option>
+            <option value="light">Светлая</option>
+            <option value="auto">Автоматически</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>🔔 Уведомления</h2>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="notifyPurchases" checked>
+            Уведомления о покупках
+          </label>
+          <label>
+            <input type="checkbox" id="notifyMessages" checked>
+            Уведомления о сообщениях
+          </label>
+          <label>
+            <input type="checkbox" id="notifyPriceChanges">
+            Уведомления об изменении цен
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>📊 Данные</h2>
+        <div class="form-group">
+          <button id="exportData" class="btn btn-info">Экспорт данных</button>
+          <button id="clearData" class="btn btn-danger">Очистить данные</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>ℹ️ О расширении</h2>
+        <p>Версия: 1.0.0</p>
+        <p>LZT Market Toolkit - комплексное расширение для работы с lzt.market</p>
+        <div class="form-group">
+          <button id="checkUpdates" class="btn btn-secondary">Проверить обновления</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

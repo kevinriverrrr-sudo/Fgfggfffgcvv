@@ -1,0 +1,138 @@
+/* LZT Market Toolkit - Content Styles */
+
+/* Enhanced product cards */
+.hasLayoutChooser .structItem-cell--main {
+  position: relative;
+}
+
+.lzt-toolkit-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+/* Enhanced seller badges */
+.username::after {
+  content: "✓";
+  margin-left: 5px;
+  color: #7c3aed;
+  font-weight: bold;
+}
+
+/* Quick action buttons on product pages */
+.lzt-quick-actions {
+  display: flex;
+  gap: 10px;
+  margin: 15px 0;
+  flex-wrap: wrap;
+}
+
+.lzt-quick-btn {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.lzt-quick-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.5);
+}
+
+/* Price tracking indicator */
+.lzt-tracked-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  margin-left: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Enhanced statistics display */
+.lzt-stat-highlight {
+  background: rgba(124, 58, 237, 0.1);
+  border-left: 3px solid #7c3aed;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+}
+
+/* Profit/Loss indicators */
+.lzt-profit {
+  color: #10b981 !important;
+  font-weight: 700;
+}
+
+.lzt-loss {
+  color: #ef4444 !important;
+  font-weight: 700;
+}
+
+/* Enhanced tooltips */
+.lzt-tooltip {
+  position: relative;
+  cursor: help;
+}
+
+.lzt-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a3e;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  border: 2px solid #7c3aed;
+  margin-bottom: 5px;
+}
+
+.lzt-tooltip:hover::after {
+  opacity: 1;
+}
+
+/* Loading spinner */
+.lzt-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(124, 58, 237, 0.3);
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
