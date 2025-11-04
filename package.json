@@ -1,0 +1,13 @@
+{
+  "name": "background-remover",
+  "version": "1.0.0",
+  "description": "Веб-приложение для удаления фона с изображений",
+  "type": "module",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "start": "python -m http.server 8000"
+  },
+  "dependencies": {
+    "@imgly/background-removal": "^1.4.5"
+  }
+}

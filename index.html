@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Удаление фона с фотографий</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Удаление фона с фотографий</h1>
+            <p>Загрузите изображение и автоматически удалите фон за несколько секунд</p>
+        </header>
+
+        <main>
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-area" id="uploadArea">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h2>Перетащите изображение сюда</h2>
+                    <p>или</p>
+                    <label for="fileInput" class="upload-button">Выберите файл</label>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                    <p class="file-info">Поддерживаются форматы: JPG, PNG, WebP</p>
+                </div>
+            </div>
+
+            <div class="processing-section" id="processingSection" style="display: none;">
+                <div class="spinner"></div>
+                <p>Обработка изображения...</p>
+                <p class="processing-info">Это может занять несколько секунд</p>
+            </div>
+
+            <div class="result-section" id="resultSection" style="display: none;">
+                <div class="image-comparison">
+                    <div class="image-container">
+                        <h3>Оригинал</h3>
+                        <img id="originalImage" alt="Оригинальное изображение">
+                    </div>
+                    <div class="image-container">
+                        <h3>Без фона</h3>
+                        <div class="checkered-bg">
+                            <img id="resultImage" alt="Изображение без фона">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="downloadButton" class="button primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Скачать результат
+                    </button>
+                    <button id="newImageButton" class="button secondary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Загрузить новое изображение
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Обработка изображений происходит локально в вашем браузере</p>
+            <p>Ваши фотографии не загружаются на сервер</p>
+        </footer>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
