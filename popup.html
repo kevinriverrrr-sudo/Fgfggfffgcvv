@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roblox Auto Register</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Roblox Auto Register</h1>
+    
+    <div class="controls">
+      <button id="startBtn" class="btn btn-start">▶ Начать регистрацию</button>
+      <button id="clearLogsBtn" class="btn btn-clear">🗑 Очистить логи</button>
+    </div>
+
+    <div class="status" id="status">
+      Готов к работе
+    </div>
+
+    <div class="logs-section">
+      <h2>📋 Логи регистраций</h2>
+      <div class="logs-stats">
+        <span>Всего аккаунтов: <strong id="totalAccounts">0</strong></span>
+      </div>
+      <div id="logsList" class="logs-list">
+        <p class="no-logs">Логи пусты. Начните регистрацию!</p>
+      </div>
+    </div>
+
+    <div class="export-section">
+      <button id="exportBtn" class="btn btn-export">💾 Экспорт в TXT</button>
+      <button id="copyAllBtn" class="btn btn-copy">📋 Копировать все</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
