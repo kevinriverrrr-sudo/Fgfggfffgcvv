@@ -1,749 +1,645 @@
+-- Arizona Admin Helper для MonetLoader
+-- Автор: @MarkusGarantor (telegram)
+-- Версия: 1.0.0
+
 script_name("Arizona Admin Helper")
 script_author("@MarkusGarantor (telegram)")
 script_version("1.0.0")
+script_description("Админ хелпер для Arizona RP")
 
-require "lib.moonloader"
-local imgui = require "mimgui"
-local encoding = require "encoding"
-encoding.default = "CP1251"
+local dlstatus = require('moonloader').download_status
+local imgui = require('mimgui')
+local ffi = require('ffi')
+local encoding = require('encoding')
+encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
-local ffi = require "ffi"
-local new = imgui.new
-
--- Основные переменные
-local main_window = new.bool(false)
-local selected_tab = new.int(0)
+-- Переменные окон
+local main_window = imgui.new.bool()
+local selected_tab = imgui.new.int(0)
 
 -- Поля ввода
-local input_id = new.char[256]()
-local input_reason = new.char[256]()
-local input_time = new.char[256]()
-local input_x = new.char[256]()
-local input_y = new.char[256]()
-local input_z = new.char[256]()
-local input_message = new.char[512]()
+local input_id = imgui.new.char[256]()
+local input_reason = imgui.new.char[256]()
+local input_time = imgui.new.char[256]()
+local input_x = imgui.new.char[256]()
+local input_y = imgui.new.char[256]()
+local input_z = imgui.new.char[256]()
+local input_veh_id = imgui.new.char[256]()
+local input_weapon_id = imgui.new.char[256]()
 
--- Настройки цветов
-local color_r = new.float(1.0)
-local color_g = new.float(0.0)
-local color_b = new.float(0.0)
-local save_colors = new.bool(false)
+-- Настройки цвета
+local theme_color = imgui.new.float[3](1.0, 0.0, 0.0) -- Красный по умолчанию
 
 -- Конфигурация
-local config_path = getWorkingDirectory() .. "\\config\\arizona_admin_helper.ini"
-local ini = require "inicfg"
-
-local config = {
-    settings = {
-        theme_r = 1.0,
-        theme_g = 0.0,
-        theme_b = 0.0,
-        auto_prefix = true,
-        notifications = true
-    }
+local cfg = {
+    theme_r = 1.0,
+    theme_g = 0.0,
+    theme_b = 0.0,
+    window_state = false
 }
 
--- Загрузка конфигурации
-if not doesDirectoryExist(getWorkingDirectory() .. "\\config") then
-    createDirectory(getWorkingDirectory() .. "\\config")
+local config_path = getWorkingDirectory() .. '/config/arizona_helper_config.json'
+
+-- Функции для работы с конфигом
+function loadConfig()
+    if doesFileExist(config_path) then
+        local file = io.open(config_path, 'r')
+        if file then
+            local content = file:read('*a')
+            file:close()
+            local result, data = pcall(decodeJson, content)
+            if result and data then
+                cfg = data
+                theme_color[0] = cfg.theme_r or 1.0
+                theme_color[1] = cfg.theme_g or 0.0
+                theme_color[2] = cfg.theme_b or 0.0
+            end
+        end
+    end
 end
 
-if doesFileExist(config_path) then
-    config = ini.load(nil, config_path)
-    color_r[0] = tonumber(config.settings.theme_r) or 1.0
-    color_g[0] = tonumber(config.settings.theme_g) or 0.0
-    color_b[0] = tonumber(config.settings.theme_b) or 0.0
-end
-
--- Функция сохранения конфигурации
-function save_config()
-    config.settings.theme_r = color_r[0]
-    config.settings.theme_g = color_g[0]
-    config.settings.theme_b = color_b[0]
-    ini.save(config, config_path)
-end
-
--- Функция отправки сообщения в чат
-function sendChatMessage(message)
-    sampSendChat(message)
-end
-
--- Уведомление
-function notify(text)
-    sampAddChatMessage("[Arizona Admin Helper] {FFFFFF}" .. text, 0xFF0000)
-end
-
--- Главная функция скрипта
-function main()
-    if not isSampLoaded() or not isSampfuncsLoaded() then return end
-    while not isSampAvailable() do wait(100) end
+function saveConfig()
+    cfg.theme_r = theme_color[0]
+    cfg.theme_g = theme_color[1]
+    cfg.theme_b = theme_color[2]
     
-    sampRegisterChatCommand("chelper", function()
-        main_window[0] = not main_window[0]
-        imgui.Process = main_window[0]
-    end)
+    if not doesDirectoryExist(getWorkingDirectory() .. '/config') then
+        createDirectory(getWorkingDirectory() .. '/config')
+    end
     
-    notify("Успешно загружен! Используйте {FF0000}/chelper {FFFFFF}для открытия меню")
-    
-    -- Применение темы
-    apply_custom_theme()
-    
-    wait(-1)
+    local file = io.open(config_path, 'w')
+    if file then
+        file:write(encodeJson(cfg))
+        file:close()
+        addChatMessage('[Arizona Helper] {FFFFFF}Настройки сохранены!', 0xFF0000)
+    end
 end
 
--- Применение пользовательской темы
-function apply_custom_theme()
-    local style = imgui.GetStyle()
-    local colors = style.Colors
-    local clr = imgui.Col
-    local ImVec4 = imgui.ImVec4
-    local ImVec2 = imgui.ImVec2
-    
-    -- Основные цвета интерфейса
-    colors[clr.WindowBg]                = ImVec4(0.14, 0.12, 0.16, 1.00)
-    colors[clr.ChildBg]                 = ImVec4(0.12, 0.10, 0.14, 1.00)
-    colors[clr.PopupBg]                 = ImVec4(0.14, 0.12, 0.16, 1.00)
-    colors[clr.Border]                  = ImVec4(color_r[0], color_g[0], color_b[0], 0.50)
-    colors[clr.FrameBg]                 = ImVec4(0.20, 0.18, 0.22, 1.00)
-    colors[clr.FrameBgHovered]          = ImVec4(color_r[0] * 0.6, color_g[0] * 0.6, color_b[0] * 0.6, 0.40)
-    colors[clr.FrameBgActive]           = ImVec4(color_r[0] * 0.8, color_g[0] * 0.8, color_b[0] * 0.8, 0.60)
-    colors[clr.TitleBg]                 = ImVec4(color_r[0] * 0.4, color_g[0] * 0.4, color_b[0] * 0.4, 1.00)
-    colors[clr.TitleBgActive]           = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.TitleBgCollapsed]        = ImVec4(color_r[0] * 0.3, color_g[0] * 0.3, color_b[0] * 0.3, 0.75)
-    colors[clr.MenuBarBg]               = ImVec4(0.20, 0.18, 0.22, 1.00)
-    colors[clr.ScrollbarBg]             = ImVec4(0.20, 0.18, 0.22, 1.00)
-    colors[clr.ScrollbarGrab]           = ImVec4(color_r[0], color_g[0], color_b[0], 0.50)
-    colors[clr.ScrollbarGrabHovered]    = ImVec4(color_r[0], color_g[0], color_b[0], 0.70)
-    colors[clr.ScrollbarGrabActive]     = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.CheckMark]               = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.SliderGrab]              = ImVec4(color_r[0], color_g[0], color_b[0], 0.70)
-    colors[clr.SliderGrabActive]        = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.Button]                  = ImVec4(color_r[0], color_g[0], color_b[0], 0.60)
-    colors[clr.ButtonHovered]           = ImVec4(color_r[0], color_g[0], color_b[0], 0.80)
-    colors[clr.ButtonActive]            = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.Header]                  = ImVec4(color_r[0], color_g[0], color_b[0], 0.70)
-    colors[clr.HeaderHovered]           = ImVec4(color_r[0], color_g[0], color_b[0], 0.80)
-    colors[clr.HeaderActive]            = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.Separator]               = ImVec4(color_r[0], color_g[0], color_b[0], 0.50)
-    colors[clr.SeparatorHovered]        = ImVec4(color_r[0], color_g[0], color_b[0], 0.70)
-    colors[clr.SeparatorActive]         = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.ResizeGrip]              = ImVec4(color_r[0], color_g[0], color_b[0], 0.25)
-    colors[clr.ResizeGripHovered]       = ImVec4(color_r[0], color_g[0], color_b[0], 0.70)
-    colors[clr.ResizeGripActive]        = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.Tab]                     = ImVec4(color_r[0] * 0.6, color_g[0] * 0.6, color_b[0] * 0.6, 0.80)
-    colors[clr.TabHovered]              = ImVec4(color_r[0], color_g[0], color_b[0], 0.80)
-    colors[clr.TabActive]               = ImVec4(color_r[0], color_g[0], color_b[0], 1.00)
-    colors[clr.TabUnfocused]            = ImVec4(0.20, 0.18, 0.22, 1.00)
-    colors[clr.TabUnfocusedActive]      = ImVec4(color_r[0] * 0.5, color_g[0] * 0.5, color_b[0] * 0.5, 1.00)
-    colors[clr.Text]                    = ImVec4(0.90, 0.90, 0.90, 1.00)
-    colors[clr.TextDisabled]            = ImVec4(0.50, 0.50, 0.50, 1.00)
-    
-    -- Стиль окон
-    style.WindowPadding = ImVec2(8, 8)
-    style.WindowRounding = 7.0
-    style.FramePadding = ImVec2(5, 3)
-    style.FrameRounding = 4.0
-    style.ItemSpacing = ImVec2(8, 4)
-    style.ItemInnerSpacing = ImVec2(6, 4)
-    style.IndentSpacing = 21.0
-    style.ScrollbarSize = 14.0
-    style.ScrollbarRounding = 9.0
-    style.GrabMinSize = 10.0
-    style.GrabRounding = 3.0
-    style.WindowTitleAlign = ImVec2(0.5, 0.5)
+-- Функция отправки команд
+function sendCmd(cmd)
+    sampSendChat(cmd)
 end
 
--- Функции для работы с админ командами
+-- Уведомления
+function notify(text, color)
+    color = color or 0xFF0000
+    sampAddChatMessage('[Arizona Helper] {FFFFFF}' .. text, color)
+end
 
--- Управление игроками
+-- Админ функции
 function kickPlayer(id, reason)
-    sendChatMessage("/kick " .. id .. " " .. reason)
-    notify("Кик игрока ID " .. id .. " по причине: " .. reason)
+    sendCmd('/kick ' .. id .. ' ' .. reason)
+    notify('Кик игрока ID: ' .. id)
 end
 
 function banPlayer(id, days, reason)
-    sendChatMessage("/ban " .. id .. " " .. days .. " " .. reason)
-    notify("Бан игрока ID " .. id .. " на " .. days .. " дней")
+    sendCmd('/ban ' .. id .. ' ' .. days .. ' ' .. reason)
+    notify('Бан игрока ID: ' .. id .. ' на ' .. days .. ' дней')
 end
 
 function mutePlayer(id, time, reason)
-    sendChatMessage("/mute " .. id .. " " .. time .. " " .. reason)
-    notify("Мут игрока ID " .. id .. " на " .. time .. " минут")
+    sendCmd('/mute ' .. id .. ' ' .. time .. ' ' .. reason)
+    notify('Мут игрока ID: ' .. id .. ' на ' .. time .. ' минут')
 end
 
 function jailPlayer(id, time, reason)
-    sendChatMessage("/jail " .. id .. " " .. time .. " " .. reason)
-    notify("Посадка игрока ID " .. id .. " в тюрьму на " .. time .. " минут")
+    sendCmd('/jail ' .. id .. ' ' .. time .. ' ' .. reason)
+    notify('Jail игрока ID: ' .. id)
 end
 
 function warnPlayer(id, reason)
-    sendChatMessage("/warn " .. id .. " " .. reason)
-    notify("Предупреждение игроку ID " .. id)
+    sendCmd('/warn ' .. id .. ' ' .. reason)
+    notify('Варн игрока ID: ' .. id)
 end
 
 function freezePlayer(id)
-    sendChatMessage("/freeze " .. id)
-    notify("Заморозка игрока ID " .. id)
+    sendCmd('/freeze ' .. id)
+    notify('Заморозка ID: ' .. id)
 end
 
 function unfreezePlayer(id)
-    sendChatMessage("/unfreeze " .. id)
-    notify("Разморозка игрока ID " .. id)
+    sendCmd('/unfreeze ' .. id)
+    notify('Разморозка ID: ' .. id)
+end
+
+function healPlayer(id)
+    sendCmd('/sethp ' .. id .. ' 100')
+    notify('Лечение ID: ' .. id)
+end
+
+function spectatePlayer(id)
+    sendCmd('/spec ' .. id)
+    notify('Наблюдение за ID: ' .. id)
+end
+
+function stopSpectate()
+    sendCmd('/specoff')
+    notify('Остановка наблюдения')
 end
 
 -- Телепортация
-function teleportToPlayer(id)
-    sendChatMessage("/goto " .. id)
-    notify("Телепортация к игроку ID " .. id)
+function tpToPlayer(id)
+    sendCmd('/goto ' .. id)
+    notify('ТП к игроку ID: ' .. id)
 end
 
-function teleportPlayerToMe(id)
-    sendChatMessage("/gethere " .. id)
-    notify("Телепортация игрока ID " .. id .. " к вам")
+function tpPlayerToMe(id)
+    sendCmd('/gethere ' .. id)
+    notify('ТП игрока к вам')
 end
 
-function teleportToCoords(x, y, z)
-    sendChatMessage("/gotocoord " .. x .. " " .. y .. " " .. z)
-    notify("Телепортация на координаты")
+function tpToCoords(x, y, z)
+    sendCmd('/gotocoord ' .. x .. ' ' .. y .. ' ' .. z)
+    notify('ТП на координаты')
 end
 
 -- Транспорт
-function spawnVehicle(id)
-    sendChatMessage("/veh " .. id)
-    notify("Создание транспорта ID " .. id)
+function spawnVehicle(veh_id)
+    sendCmd('/veh ' .. veh_id)
+    notify('Создание транспорта ID: ' .. veh_id)
 end
 
 function repairVehicle()
-    sendChatMessage("/repair")
-    notify("Ремонт транспорта")
+    sendCmd('/repair')
+    notify('Ремонт транспорта')
 end
 
 function flipVehicle()
-    sendChatMessage("/flip")
-    notify("Переворот транспорта")
+    sendCmd('/flip')
+    notify('Переворот транспорта')
 end
 
 -- Оружие
 function giveWeapon(weapon_id)
-    sendChatMessage("/givegun " .. weapon_id)
-    notify("Выдача оружия ID " .. weapon_id)
+    sendCmd('/givegun ' .. weapon_id)
+    notify('Выдача оружия ID: ' .. weapon_id)
 end
 
--- Прочее
-function healPlayer(id)
-    sendChatMessage("/sethp " .. id .. " 100")
-    notify("Лечение игрока ID " .. id)
+-- Применение темы
+function applyTheme()
+    local style = imgui.GetStyle()
+    local colors = style.Colors
+    local clr = imgui.Col
+    
+    -- Получаем текущий цвет темы
+    local r, g, b = theme_color[0], theme_color[1], theme_color[2]
+    
+    -- Применяем цвета
+    colors[clr.TitleBg] = imgui.ImVec4(r * 0.5, g * 0.5, b * 0.5, 1.0)
+    colors[clr.TitleBgActive] = imgui.ImVec4(r, g, b, 1.0)
+    colors[clr.TitleBgCollapsed] = imgui.ImVec4(r * 0.3, g * 0.3, b * 0.3, 0.75)
+    colors[clr.Button] = imgui.ImVec4(r * 0.7, g * 0.7, b * 0.7, 0.8)
+    colors[clr.ButtonHovered] = imgui.ImVec4(r * 0.9, g * 0.9, b * 0.9, 1.0)
+    colors[clr.ButtonActive] = imgui.ImVec4(r, g, b, 1.0)
+    colors[clr.Header] = imgui.ImVec4(r * 0.7, g * 0.7, b * 0.7, 0.8)
+    colors[clr.HeaderHovered] = imgui.ImVec4(r * 0.85, g * 0.85, b * 0.85, 0.9)
+    colors[clr.HeaderActive] = imgui.ImVec4(r, g, b, 1.0)
+    colors[clr.Tab] = imgui.ImVec4(r * 0.5, g * 0.5, b * 0.5, 0.8)
+    colors[clr.TabHovered] = imgui.ImVec4(r * 0.8, g * 0.8, b * 0.8, 1.0)
+    colors[clr.TabActive] = imgui.ImVec4(r, g, b, 1.0)
+    colors[clr.TabUnfocused] = imgui.ImVec4(r * 0.3, g * 0.3, b * 0.3, 0.8)
+    colors[clr.TabUnfocusedActive] = imgui.ImVec4(r * 0.6, g * 0.6, b * 0.6, 1.0)
+    colors[clr.CheckMark] = imgui.ImVec4(r, g, b, 1.0)
+    colors[clr.SliderGrab] = imgui.ImVec4(r, g, b, 0.7)
+    colors[clr.SliderGrabActive] = imgui.ImVec4(r, g, b, 1.0)
+    colors[clr.FrameBg] = imgui.ImVec4(0.2, 0.2, 0.22, 1.0)
+    colors[clr.FrameBgHovered] = imgui.ImVec4(r * 0.4, g * 0.4, b * 0.4, 0.5)
+    colors[clr.FrameBgActive] = imgui.ImVec4(r * 0.6, g * 0.6, b * 0.6, 0.6)
+    colors[clr.WindowBg] = imgui.ImVec4(0.14, 0.14, 0.16, 0.95)
+    colors[clr.Border] = imgui.ImVec4(r * 0.6, g * 0.6, b * 0.6, 0.5)
+    colors[clr.Separator] = imgui.ImVec4(r * 0.6, g * 0.6, b * 0.6, 0.5)
+    colors[clr.SeparatorHovered] = imgui.ImVec4(r * 0.8, g * 0.8, b * 0.8, 0.7)
+    colors[clr.SeparatorActive] = imgui.ImVec4(r, g, b, 1.0)
+    
+    -- Стиль для мобильного интерфейса
+    style.WindowRounding = 8.0
+    style.FrameRounding = 6.0
+    style.FramePadding = imgui.ImVec2(8, 6)
+    style.ItemSpacing = imgui.ImVec2(10, 8)
+    style.TouchExtraPadding = imgui.ImVec2(0, 3) -- Для лучшего тач управления
+    style.WindowPadding = imgui.ImVec2(10, 10)
+    style.ScrollbarSize = 18.0
+    style.ScrollbarRounding = 12.0
+    style.GrabMinSize = 12.0
+    style.GrabRounding = 6.0
 end
 
-function setArmor(id, armor)
-    sendChatMessage("/setarmour " .. id .. " " .. armor)
-    notify("Установка брони игроку ID " .. id)
-end
-
-function spectatePlayer(id)
-    sendChatMessage("/spec " .. id)
-    notify("Наблюдение за игроком ID " .. id)
-end
-
-function stopSpectate()
-    sendChatMessage("/specoff")
-    notify("Отключение наблюдения")
-end
-
--- Интерфейс ImGui
-local renderWindow = imgui.OnFrame(
+-- Интерфейс
+local main_frame = imgui.OnFrame(
     function() return main_window[0] end,
-    function(player)
-        local resX, resY = getScreenResolution()
-        local sizeX, sizeY = 900, 600
-        imgui.SetNextWindowPos(imgui.ImVec2(resX / 2, resY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-        imgui.SetNextWindowSize(imgui.ImVec2(sizeX, sizeY), imgui.Cond.FirstUseEver)
+    function()
+        local sw, sh = getScreenResolution()
+        imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+        imgui.SetNextWindowSize(imgui.ImVec2(sw * 0.85, sh * 0.75), imgui.Cond.FirstUseEver) -- Адаптивный размер
         
-        imgui.Begin("Arizona Admin Helper - by @MarkusGarantor", main_window, imgui.WindowFlags.NoCollapse)
+        imgui.Begin(u8'Arizona Admin Helper by @MarkusGarantor', main_window, imgui.WindowFlags.NoCollapse)
         
-        -- Вкладки
-        if imgui.BeginTabBar("MainTabs") then
+        if imgui.BeginTabBar('MainTabs') then
             
-            -- Вкладка управления игроками
-            if imgui.BeginTabItem(u8"👤 Управление игроками") then
-                imgui.BeginChild("PlayerManagement", imgui.ImVec2(0, 0), true)
-                
-                imgui.TextColoredRGB("{FF0000}Управление игроками")
+            -- Вкладка "Управление игроками"
+            if imgui.BeginTabItem(u8'👤 Игроки') then
+                imgui.Spacing()
+                imgui.TextColored(imgui.ImVec4(theme_color[0], theme_color[1], theme_color[2], 1.0), u8'УПРАВЛЕНИЕ ИГРОКАМИ')
                 imgui.Separator()
                 imgui.Spacing()
                 
-                imgui.PushItemWidth(150)
-                imgui.InputText(u8"ID игрока", input_id, 256)
-                imgui.InputText(u8"Причина", input_reason, 256)
-                imgui.InputText(u8"Время (мин/дней)", input_time, 256)
+                imgui.PushItemWidth(imgui.GetWindowWidth() * 0.9)
+                imgui.InputTextWithHint(u8'##id', u8'ID игрока', input_id, 256)
+                imgui.InputTextWithHint(u8'##reason', u8'Причина', input_reason, 256)
+                imgui.InputTextWithHint(u8'##time', u8'Время (минуты/дни)', input_time, 256)
                 imgui.PopItemWidth()
                 
                 imgui.Spacing()
                 
-                if imgui.Button(u8"🚫 Кик", imgui.ImVec2(150, 30)) then
+                local btn_width = imgui.GetWindowWidth() * 0.43
+                local btn_height = 45
+                
+                if imgui.Button(u8'🚫 KICK', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
                     local reason = ffi.string(input_reason)
-                    if id ~= "" and reason ~= "" then
+                    if id ~= '' and reason ~= '' then
                         kickPlayer(id, reason)
                     else
-                        notify("Заполните ID и причину!")
+                        notify('Заполните ID и причину!', 0xFF0000)
                     end
                 end
-                
                 imgui.SameLine()
-                if imgui.Button(u8"🔨 Бан", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'🔨 BAN', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
                     local days = ffi.string(input_time)
                     local reason = ffi.string(input_reason)
-                    if id ~= "" and days ~= "" and reason ~= "" then
+                    if id ~= '' and days ~= '' and reason ~= '' then
                         banPlayer(id, days, reason)
                     else
-                        notify("Заполните все поля!")
+                        notify('Заполните все поля!', 0xFF0000)
                     end
                 end
                 
-                imgui.SameLine()
-                if imgui.Button(u8"🔇 Мут", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'🔇 MUTE', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
                     local time = ffi.string(input_time)
                     local reason = ffi.string(input_reason)
-                    if id ~= "" and time ~= "" and reason ~= "" then
+                    if id ~= '' and time ~= '' and reason ~= '' then
                         mutePlayer(id, time, reason)
                     else
-                        notify("Заполните все поля!")
+                        notify('Заполните все поля!', 0xFF0000)
                     end
                 end
-                
-                if imgui.Button(u8"⛓️ Тюрьма", imgui.ImVec2(150, 30)) then
+                imgui.SameLine()
+                if imgui.Button(u8'⛓️ JAIL', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
                     local time = ffi.string(input_time)
                     local reason = ffi.string(input_reason)
-                    if id ~= "" and time ~= "" and reason ~= "" then
+                    if id ~= '' and time ~= '' and reason ~= '' then
                         jailPlayer(id, time, reason)
                     else
-                        notify("Заполните все поля!")
+                        notify('Заполните все поля!', 0xFF0000)
                     end
                 end
                 
-                imgui.SameLine()
-                if imgui.Button(u8"⚠️ Варн", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'⚠️ WARN', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
                     local reason = ffi.string(input_reason)
-                    if id ~= "" and reason ~= "" then
+                    if id ~= '' and reason ~= '' then
                         warnPlayer(id, reason)
                     else
-                        notify("Заполните ID и причину!")
+                        notify('Заполните ID и причину!', 0xFF0000)
                     end
                 end
-                
                 imgui.SameLine()
-                if imgui.Button(u8"❄️ Заморозить", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'❄️ FREEZE', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
-                    if id ~= "" then
+                    if id ~= '' then
                         freezePlayer(id)
                     else
-                        notify("Укажите ID!")
+                        notify('Укажите ID!', 0xFF0000)
                     end
                 end
                 
-                if imgui.Button(u8"🔥 Разморозить", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'🔥 UNFREEZE', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
-                    if id ~= "" then
+                    if id ~= '' then
                         unfreezePlayer(id)
                     else
-                        notify("Укажите ID!")
+                        notify('Укажите ID!', 0xFF0000)
                     end
                 end
-                
                 imgui.SameLine()
-                if imgui.Button(u8"💊 Вылечить", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'💊 HEAL', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
-                    if id ~= "" then
+                    if id ~= '' then
                         healPlayer(id)
                     else
-                        notify("Укажите ID!")
+                        notify('Укажите ID!', 0xFF0000)
                     end
                 end
                 
-                imgui.SameLine()
-                if imgui.Button(u8"👁️ Наблюдать", imgui.ImVec2(150, 30)) then
+                if imgui.Button(u8'👁️ SPECTATE', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
-                    if id ~= "" then
+                    if id ~= '' then
                         spectatePlayer(id)
                     else
-                        notify("Укажите ID!")
+                        notify('Укажите ID!', 0xFF0000)
                     end
                 end
-                
-                if imgui.Button(u8"🚫 Остановить наблюдение", imgui.ImVec2(200, 30)) then
+                imgui.SameLine()
+                if imgui.Button(u8'🚫 STOP SPEC', imgui.ImVec2(btn_width, btn_height)) then
                     stopSpectate()
                 end
                 
-                imgui.EndChild()
                 imgui.EndTabItem()
             end
             
-            -- Вкладка телепортации
-            if imgui.BeginTabItem(u8"🌍 Телепортация") then
-                imgui.BeginChild("Teleportation", imgui.ImVec2(0, 0), true)
-                
-                imgui.TextColoredRGB("{FF0000}Телепортация")
+            -- Вкладка "Телепортация"
+            if imgui.BeginTabItem(u8'🌍 ТП') then
+                imgui.Spacing()
+                imgui.TextColored(imgui.ImVec4(theme_color[0], theme_color[1], theme_color[2], 1.0), u8'ТЕЛЕПОРТАЦИЯ')
                 imgui.Separator()
                 imgui.Spacing()
                 
-                imgui.Text(u8"Телепортация к игроку:")
-                imgui.PushItemWidth(200)
-                imgui.InputText(u8"ID##tp1", input_id, 256)
+                imgui.Text(u8'К игроку / Игрока ко мне:')
+                imgui.PushItemWidth(imgui.GetWindowWidth() * 0.9)
+                imgui.InputTextWithHint(u8'##tpid', u8'ID игрока', input_id, 256)
                 imgui.PopItemWidth()
                 
-                if imgui.Button(u8"🚀 Телепортироваться к игроку", imgui.ImVec2(250, 30)) then
+                local btn_width = imgui.GetWindowWidth() * 0.43
+                local btn_height = 45
+                
+                if imgui.Button(u8'🚀 К ИГРОКУ', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
-                    if id ~= "" then
-                        teleportToPlayer(id)
+                    if id ~= '' then
+                        tpToPlayer(id)
                     else
-                        notify("Укажите ID!")
+                        notify('Укажите ID!', 0xFF0000)
                     end
                 end
-                
                 imgui.SameLine()
-                if imgui.Button(u8"📍 Телепортировать ко мне", imgui.ImVec2(250, 30)) then
+                if imgui.Button(u8'📍 КО МНЕ', imgui.ImVec2(btn_width, btn_height)) then
                     local id = ffi.string(input_id)
-                    if id ~= "" then
-                        teleportPlayerToMe(id)
+                    if id ~= '' then
+                        tpPlayerToMe(id)
                     else
-                        notify("Укажите ID!")
+                        notify('Укажите ID!', 0xFF0000)
                     end
                 end
                 
                 imgui.Spacing()
                 imgui.Separator()
                 imgui.Spacing()
+                imgui.Text(u8'По координатам:')
                 
-                imgui.Text(u8"Телепортация по координатам:")
-                imgui.PushItemWidth(150)
-                imgui.InputText("X", input_x, 256)
+                imgui.PushItemWidth(imgui.GetWindowWidth() * 0.28)
+                imgui.InputTextWithHint(u8'##x', u8'X', input_x, 256)
                 imgui.SameLine()
-                imgui.InputText("Y", input_y, 256)
+                imgui.InputTextWithHint(u8'##y', u8'Y', input_y, 256)
                 imgui.SameLine()
-                imgui.InputText("Z", input_z, 256)
+                imgui.InputTextWithHint(u8'##z', u8'Z', input_z, 256)
                 imgui.PopItemWidth()
                 
-                if imgui.Button(u8"🎯 Телепортироваться", imgui.ImVec2(200, 30)) then
+                if imgui.Button(u8'🎯 ТЕЛЕПОРТ', imgui.ImVec2(imgui.GetWindowWidth() * 0.9, btn_height)) then
                     local x = ffi.string(input_x)
                     local y = ffi.string(input_y)
                     local z = ffi.string(input_z)
-                    if x ~= "" and y ~= "" and z ~= "" then
-                        teleportToCoords(x, y, z)
+                    if x ~= '' and y ~= '' and z ~= '' then
+                        tpToCoords(x, y, z)
                     else
-                        notify("Заполните все координаты!")
+                        notify('Заполните координаты!', 0xFF0000)
                     end
                 end
                 
                 imgui.Spacing()
                 imgui.Separator()
                 imgui.Spacing()
-                
-                imgui.Text(u8"Быстрая телепортация:")
+                imgui.Text(u8'Быстрая ТП:')
                 imgui.Spacing()
                 
-                if imgui.Button(u8"🏛️ Мэрия LS", imgui.ImVec2(150, 30)) then
-                    teleportToCoords("1481.0", "-1772.4", "18.8")
+                if imgui.Button(u8'🏛️ МЭРИЯ LS', imgui.ImVec2(btn_width, btn_height)) then
+                    tpToCoords('1481.0', '-1772.4', '18.8')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🏥 Больница LS", imgui.ImVec2(150, 30)) then
-                    teleportToCoords("1172.0", "-1323.0", "15.4")
-                end
-                imgui.SameLine()
-                if imgui.Button(u8"👮 LSPD", imgui.ImVec2(150, 30)) then
-                    teleportToCoords("1554.5", "-1675.6", "16.2")
+                if imgui.Button(u8'🏥 БОЛЬНИЦА LS', imgui.ImVec2(btn_width, btn_height)) then
+                    tpToCoords('1172.0', '-1323.0', '15.4')
                 end
                 
-                if imgui.Button(u8"🏦 Банк LS", imgui.ImVec2(150, 30)) then
-                    teleportToCoords("1462.3", "-1011.4", "26.8")
+                if imgui.Button(u8'👮 LSPD', imgui.ImVec2(btn_width, btn_height)) then
+                    tpToCoords('1554.5', '-1675.6', '16.2')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"✈️ Аэропорт LS", imgui.ImVec2(150, 30)) then
-                    teleportToCoords("1642.9", "-2335.8", "13.5")
-                end
-                imgui.SameLine()
-                if imgui.Button(u8"🏖️ Пляж LS", imgui.ImVec2(150, 30)) then
-                    teleportToCoords("305.0", "-1825.0", "4.5")
+                if imgui.Button(u8'🏦 БАНК LS', imgui.ImVec2(btn_width, btn_height)) then
+                    tpToCoords('1462.3', '-1011.4', '26.8')
                 end
                 
-                imgui.EndChild()
+                if imgui.Button(u8'✈️ АЭРОПОРТ', imgui.ImVec2(btn_width, btn_height)) then
+                    tpToCoords('1642.9', '-2335.8', '13.5')
+                end
+                imgui.SameLine()
+                if imgui.Button(u8'🏖️ ПЛЯЖ', imgui.ImVec2(btn_width, btn_height)) then
+                    tpToCoords('305.0', '-1825.0', '4.5')
+                end
+                
                 imgui.EndTabItem()
             end
             
-            -- Вкладка транспорта
-            if imgui.BeginTabItem(u8"🚗 Транспорт") then
-                imgui.BeginChild("Vehicles", imgui.ImVec2(0, 0), true)
-                
-                imgui.TextColoredRGB("{FF0000}Транспорт")
+            -- Вкладка "Транспорт"
+            if imgui.BeginTabItem(u8'🚗 Авто') then
+                imgui.Spacing()
+                imgui.TextColored(imgui.ImVec4(theme_color[0], theme_color[1], theme_color[2], 1.0), u8'ТРАНСПОРТ')
                 imgui.Separator()
                 imgui.Spacing()
                 
-                imgui.Text(u8"Создание транспорта:")
-                imgui.PushItemWidth(200)
-                imgui.InputText(u8"ID транспорта", input_id, 256)
+                imgui.PushItemWidth(imgui.GetWindowWidth() * 0.9)
+                imgui.InputTextWithHint(u8'##vehid', u8'ID транспорта', input_veh_id, 256)
                 imgui.PopItemWidth()
                 
-                if imgui.Button(u8"🚘 Создать транспорт", imgui.ImVec2(200, 30)) then
-                    local id = ffi.string(input_id)
-                    if id ~= "" then
-                        spawnVehicle(id)
+                local btn_width = imgui.GetWindowWidth() * 0.28
+                local btn_height = 45
+                
+                if imgui.Button(u8'🚘 SPAWN', imgui.ImVec2(btn_width, btn_height)) then
+                    local veh_id = ffi.string(input_veh_id)
+                    if veh_id ~= '' then
+                        spawnVehicle(veh_id)
                     else
-                        notify("Укажите ID транспорта!")
+                        notify('Укажите ID транспорта!', 0xFF0000)
                     end
                 end
-                
                 imgui.SameLine()
-                if imgui.Button(u8"🔧 Починить транспорт", imgui.ImVec2(200, 30)) then
+                if imgui.Button(u8'🔧 REPAIR', imgui.ImVec2(btn_width, btn_height)) then
                     repairVehicle()
                 end
-                
                 imgui.SameLine()
-                if imgui.Button(u8"🔄 Перевернуть", imgui.ImVec2(200, 30)) then
+                if imgui.Button(u8'🔄 FLIP', imgui.ImVec2(btn_width, btn_height)) then
                     flipVehicle()
                 end
                 
                 imgui.Spacing()
                 imgui.Separator()
                 imgui.Spacing()
-                
-                imgui.Text(u8"Популярные машины:")
+                imgui.Text(u8'Популярные авто:')
                 imgui.Spacing()
                 
-                if imgui.Button(u8"🏎️ Infernus (411)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("411")
+                if imgui.Button(u8'🏎️ Infernus', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('411')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🚙 Sultan (560)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("560")
+                if imgui.Button(u8'🚙 Sultan', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('560')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🏁 Turismo (451)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("451")
+                if imgui.Button(u8'🏁 Turismo', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('451')
                 end
                 
-                if imgui.Button(u8"🚔 Police (596)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("596")
+                if imgui.Button(u8'🚔 Police', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('596')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🚑 Ambulance (416)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("416")
+                if imgui.Button(u8'🚑 Ambulance', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('416')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🚁 Maverick (487)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("487")
+                if imgui.Button(u8'🚁 Maverick', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('487')
                 end
                 
-                if imgui.Button(u8"🏍️ NRG-500 (522)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("522")
+                if imgui.Button(u8'🏍️ NRG-500', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('522')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🚓 FBI Rancher (490)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("490")
+                if imgui.Button(u8'🚓 FBI Rancher', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('490')
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🛥️ Hydra (520)", imgui.ImVec2(150, 30)) then
-                    spawnVehicle("520")
+                if imgui.Button(u8'✈️ Hydra', imgui.ImVec2(btn_width, btn_height)) then
+                    spawnVehicle('520')
                 end
                 
-                imgui.EndChild()
                 imgui.EndTabItem()
             end
             
-            -- Вкладка оружия
-            if imgui.BeginTabItem(u8"🔫 Оружие") then
-                imgui.BeginChild("Weapons", imgui.ImVec2(0, 0), true)
-                
-                imgui.TextColoredRGB("{FF0000}Оружие")
+            -- Вкладка "Оружие"
+            if imgui.BeginTabItem(u8'🔫 Оружие') then
+                imgui.Spacing()
+                imgui.TextColored(imgui.ImVec4(theme_color[0], theme_color[1], theme_color[2], 1.0), u8'ОРУЖИЕ')
                 imgui.Separator()
                 imgui.Spacing()
                 
-                imgui.Text(u8"Ближний бой:")
-                if imgui.Button(u8"🔪 Нож (4)", imgui.ImVec2(120, 25)) then giveWeapon("4") end
+                local btn_width = imgui.GetWindowWidth() * 0.28
+                local btn_height = 42
+                
+                imgui.Text(u8'Пистолеты:')
+                if imgui.Button(u8'Deagle', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('24') end
                 imgui.SameLine()
-                if imgui.Button(u8"⚾ Бита (5)", imgui.ImVec2(120, 25)) then giveWeapon("5") end
+                if imgui.Button(u8'Colt45', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('22') end
                 imgui.SameLine()
-                if imgui.Button(u8"🪚 Бензопила (9)", imgui.ImVec2(120, 25)) then giveWeapon("9") end
+                if imgui.Button(u8'Silenced', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('23') end
                 
                 imgui.Spacing()
-                imgui.Text(u8"Пистолеты:")
-                if imgui.Button(u8"🔫 Deagle (24)", imgui.ImVec2(120, 25)) then giveWeapon("24") end
+                imgui.Text(u8'Дробовики:')
+                if imgui.Button(u8'Shotgun', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('25') end
                 imgui.SameLine()
-                if imgui.Button(u8"🔫 Colt45 (22)", imgui.ImVec2(120, 25)) then giveWeapon("22") end
-                imgui.SameLine()
-                if imgui.Button(u8"🔫 Silenced (23)", imgui.ImVec2(120, 25)) then giveWeapon("23") end
+                if imgui.Button(u8'Combat SG', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('27') end
                 
                 imgui.Spacing()
-                imgui.Text(u8"Дробовики:")
-                if imgui.Button(u8"💥 Shotgun (25)", imgui.ImVec2(120, 25)) then giveWeapon("25") end
+                imgui.Text(u8'SMG:')
+                if imgui.Button(u8'MP5', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('29') end
                 imgui.SameLine()
-                if imgui.Button(u8"💥 Combat SG (27)", imgui.ImVec2(120, 25)) then giveWeapon("27") end
+                if imgui.Button(u8'UZI', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('28') end
+                imgui.SameLine()
+                if imgui.Button(u8'TEC-9', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('32') end
                 
                 imgui.Spacing()
-                imgui.Text(u8"SMG:")
-                if imgui.Button(u8"🔫 MP5 (29)", imgui.ImVec2(120, 25)) then giveWeapon("29") end
+                imgui.Text(u8'Винтовки:')
+                if imgui.Button(u8'AK-47', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('30') end
                 imgui.SameLine()
-                if imgui.Button(u8"🔫 UZI (28)", imgui.ImVec2(120, 25)) then giveWeapon("28") end
+                if imgui.Button(u8'M4', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('31') end
                 imgui.SameLine()
-                if imgui.Button(u8"🔫 TEC-9 (32)", imgui.ImVec2(120, 25)) then giveWeapon("32") end
+                if imgui.Button(u8'Sniper', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('34') end
                 
                 imgui.Spacing()
-                imgui.Text(u8"Штурмовые винтовки:")
-                if imgui.Button(u8"🔫 AK-47 (30)", imgui.ImVec2(120, 25)) then giveWeapon("30") end
+                imgui.Text(u8'Тяжёлое:')
+                if imgui.Button(u8'RPG', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('35') end
                 imgui.SameLine()
-                if imgui.Button(u8"🔫 M4 (31)", imgui.ImVec2(120, 25)) then giveWeapon("31") end
+                if imgui.Button(u8'Гранаты', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('16') end
+                imgui.SameLine()
+                if imgui.Button(u8'Огнемёт', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('37') end
                 
                 imgui.Spacing()
-                imgui.Text(u8"Снайперские винтовки:")
-                if imgui.Button(u8"🎯 Rifle (33)", imgui.ImVec2(120, 25)) then giveWeapon("33") end
+                imgui.Text(u8'Ближний бой:')
+                if imgui.Button(u8'Нож', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('4') end
                 imgui.SameLine()
-                if imgui.Button(u8"🎯 Sniper (34)", imgui.ImVec2(120, 25)) then giveWeapon("34") end
+                if imgui.Button(u8'Бита', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('5') end
+                imgui.SameLine()
+                if imgui.Button(u8'Бензопила', imgui.ImVec2(btn_width, btn_height)) then giveWeapon('9') end
                 
-                imgui.Spacing()
-                imgui.Text(u8"Тяжёлое оружие:")
-                if imgui.Button(u8"🚀 RPG (35)", imgui.ImVec2(120, 25)) then giveWeapon("35") end
-                imgui.SameLine()
-                if imgui.Button(u8"💣 Гранаты (16)", imgui.ImVec2(120, 25)) then giveWeapon("16") end
-                imgui.SameLine()
-                if imgui.Button(u8"🔥 Огнемёт (37)", imgui.ImVec2(120, 25)) then giveWeapon("37") end
-                
-                imgui.Spacing()
-                imgui.Text(u8"Прочее:")
-                if imgui.Button(u8"🎥 Камера (43)", imgui.ImVec2(120, 25)) then giveWeapon("43") end
-                imgui.SameLine()
-                if imgui.Button(u8"🌹 Цветы (14)", imgui.ImVec2(120, 25)) then giveWeapon("14") end
-                imgui.SameLine()
-                if imgui.Button(u8"🎨 Краска (41)", imgui.ImVec2(120, 25)) then giveWeapon("41") end
-                
-                imgui.EndChild()
                 imgui.EndTabItem()
             end
             
-            -- Вкладка настроек
-            if imgui.BeginTabItem(u8"⚙️ Настройки") then
-                imgui.BeginChild("Settings", imgui.ImVec2(0, 0), true)
-                
-                imgui.TextColoredRGB("{FF0000}Настройки хелпера")
+            -- Вкладка "Настройки"
+            if imgui.BeginTabItem(u8'⚙️ Настройки') then
+                imgui.Spacing()
+                imgui.TextColored(imgui.ImVec4(theme_color[0], theme_color[1], theme_color[2], 1.0), u8'НАСТРОЙКИ ТЕМЫ')
                 imgui.Separator()
                 imgui.Spacing()
                 
-                imgui.Text(u8"Тема интерфейса:")
-                imgui.Spacing()
-                
-                imgui.Text(u8"Основной цвет темы:")
-                imgui.PushItemWidth(300)
-                if imgui.ColorEdit3(u8"##ThemeColor", color_r, imgui.ColorEditFlags.NoInputs) then
-                    apply_custom_theme()
+                imgui.Text(u8'Цвет темы:')
+                if imgui.ColorEdit3(u8'##theme', theme_color, imgui.ColorEditFlags.NoInputs) then
+                    applyTheme()
                 end
-                imgui.PopItemWidth()
                 
                 imgui.Spacing()
+                local btn_width = imgui.GetWindowWidth() * 0.28
+                local btn_height = 40
                 
-                if imgui.Button(u8"🔴 Красная тема", imgui.ImVec2(150, 30)) then
-                    color_r[0], color_g[0], color_b[0] = 1.0, 0.0, 0.0
-                    apply_custom_theme()
+                if imgui.Button(u8'🔴 Красная', imgui.ImVec2(btn_width, btn_height)) then
+                    theme_color[0], theme_color[1], theme_color[2] = 1.0, 0.0, 0.0
+                    applyTheme()
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🔵 Синяя тема", imgui.ImVec2(150, 30)) then
-                    color_r[0], color_g[0], color_b[0] = 0.0, 0.4, 1.0
-                    apply_custom_theme()
+                if imgui.Button(u8'🔵 Синяя', imgui.ImVec2(btn_width, btn_height)) then
+                    theme_color[0], theme_color[1], theme_color[2] = 0.0, 0.5, 1.0
+                    applyTheme()
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🟢 Зелёная тема", imgui.ImVec2(150, 30)) then
-                    color_r[0], color_g[0], color_b[0] = 0.0, 1.0, 0.0
-                    apply_custom_theme()
+                if imgui.Button(u8'🟢 Зелёная', imgui.ImVec2(btn_width, btn_height)) then
+                    theme_color[0], theme_color[1], theme_color[2] = 0.0, 1.0, 0.0
+                    applyTheme()
                 end
                 
-                if imgui.Button(u8"🟣 Фиолетовая тема", imgui.ImVec2(150, 30)) then
-                    color_r[0], color_g[0], color_b[0] = 0.7, 0.0, 1.0
-                    apply_custom_theme()
-                end
-                imgui.SameLine()
-                if imgui.Button(u8"🟠 Оранжевая тема", imgui.ImVec2(150, 30)) then
-                    color_r[0], color_g[0], color_b[0] = 1.0, 0.5, 0.0
-                    apply_custom_theme()
+                if imgui.Button(u8'🟣 Фиолетовая', imgui.ImVec2(btn_width, btn_height)) then
+                    theme_color[0], theme_color[1], theme_color[2] = 0.7, 0.0, 1.0
+                    applyTheme()
                 end
                 imgui.SameLine()
-                if imgui.Button(u8"🟡 Жёлтая тема", imgui.ImVec2(150, 30)) then
-                    color_r[0], color_g[0], color_b[0] = 1.0, 0.9, 0.0
-                    apply_custom_theme()
+                if imgui.Button(u8'🟠 Оранжевая', imgui.ImVec2(btn_width, btn_height)) then
+                    theme_color[0], theme_color[1], theme_color[2] = 1.0, 0.5, 0.0
+                    applyTheme()
+                end
+                imgui.SameLine()
+                if imgui.Button(u8'🟡 Жёлтая', imgui.ImVec2(btn_width, btn_height)) then
+                    theme_color[0], theme_color[1], theme_color[2] = 1.0, 0.9, 0.0
+                    applyTheme()
                 end
                 
                 imgui.Spacing()
                 imgui.Separator()
                 imgui.Spacing()
                 
-                if imgui.Button(u8"💾 Сохранить настройки", imgui.ImVec2(200, 35)) then
-                    save_config()
-                    notify("Настройки сохранены!")
+                if imgui.Button(u8'💾 СОХРАНИТЬ НАСТРОЙКИ', imgui.ImVec2(imgui.GetWindowWidth() * 0.9, 50)) then
+                    saveConfig()
                 end
                 
                 imgui.Spacing()
                 imgui.Separator()
                 imgui.Spacing()
                 
-                imgui.TextColoredRGB("{FFFF00}Информация")
-                imgui.Text(u8"Версия: 1.0.0")
-                imgui.Text(u8"Автор: @MarkusGarantor (telegram)")
-                imgui.Text(u8"Команда: /chelper")
+                imgui.TextColored(imgui.ImVec4(1.0, 0.85, 0.0, 1.0), u8'ИНФОРМАЦИЯ')
+                imgui.Text(u8'Версия: 1.0.0')
+                imgui.Text(u8'Автор: @MarkusGarantor')
+                imgui.Text(u8'Команда: /chelper')
                 imgui.Spacing()
-                imgui.TextWrapped(u8"Arizona Admin Helper - профессиональный помощник для администраторов Arizona RP. Включает в себя все необходимые функции для эффективного управления сервером.")
+                imgui.TextWrapped(u8'Arizona Admin Helper - мобильный помощник администратора для Arizona RP. Оптимизирован для использования на телефонах Android с MonetLoader.')
                 
-                imgui.EndChild()
-                imgui.EndTabItem()
-            end
-            
-            -- Вкладка информации
-            if imgui.BeginTabItem(u8"ℹ️ Информация") then
-                imgui.BeginChild("Info", imgui.ImVec2(0, 0), true)
-                
-                imgui.TextColoredRGB("{FF0000}О хелпере")
-                imgui.Separator()
-                imgui.Spacing()
-                
-                imgui.TextColoredRGB("{FFFF00}Arizona Admin Helper v1.0.0")
-                imgui.Spacing()
-                imgui.Text(u8"Разработчик: @MarkusGarantor (telegram)")
-                imgui.Spacing()
-                imgui.Separator()
-                imgui.Spacing()
-                
-                imgui.TextColoredRGB("{00FF00}Возможности хелпера:")
-                imgui.Spacing()
-                imgui.BulletText(u8"Полное управление игроками (кик, бан, мут, варн, тюрьма)")
-                imgui.BulletText(u8"Система телепортации (к игрокам, по координатам, быстрая ТП)")
-                imgui.BulletText(u8"Создание и управление транспортом")
-                imgui.BulletText(u8"Выдача оружия (все виды оружия)")
-                imgui.BulletText(u8"Наблюдение за игроками")
-                imgui.BulletText(u8"Красивый и настраиваемый интерфейс")
-                imgui.BulletText(u8"Множество цветовых тем")
-                imgui.BulletText(u8"Сохранение настроек")
-                imgui.Spacing()
-                imgui.Separator()
-                imgui.Spacing()
-                
-                imgui.TextColoredRGB("{00FFFF}Команды:")
-                imgui.Spacing()
-                imgui.BulletText("/chelper - Открыть/закрыть хелпер")
-                imgui.Spacing()
-                imgui.Separator()
-                imgui.Spacing()
-                
-                imgui.TextColoredRGB("{FF00FF}Горячие клавиши:")
-                imgui.Spacing()
-                imgui.Text(u8"Данная версия не содержит горячих клавиш")
-                imgui.Text(u8"Они будут добавлены в следующих обновлениях")
-                imgui.Spacing()
-                imgui.Separator()
-                imgui.Spacing()
-                
-                imgui.TextWrapped(u8"Спасибо за использование Arizona Admin Helper! Если у вас есть предложения или вы нашли ошибки, пишите автору в Telegram: @MarkusGarantor")
-                
-                imgui.EndChild()
                 imgui.EndTabItem()
             end
             
@@ -754,39 +650,24 @@ local renderWindow = imgui.OnFrame(
     end
 )
 
--- Дополнительная функция для цветного текста
-function imgui.TextColoredRGB(text)
-    local style = imgui.GetStyle()
-    local colors = style.Colors
-    local col = imgui.Col
+-- Главная функция
+function main()
+    if not isSampLoaded() or not isSampfuncsLoaded() then return end
+    while not isSampAvailable() do wait(0) end
     
-    local function color_imvec4(color)
-        local function hexToRGB(hex)
-            hex = hex:gsub("#","")
-            return tonumber("0x"..hex:sub(1,2))/255, tonumber("0x"..hex:sub(3,4))/255, tonumber("0x"..hex:sub(5,6))/255
-        end
-        local r, g, b = hexToRGB(color)
-        return imgui.ImVec4(r, g, b, 1.0)
-    end
+    -- Загружаем конфиг
+    loadConfig()
     
-    text = text:gsub('{........}', '{%1}')
-    local function color_func(color)
-        return color_imvec4(color:sub(2, #color-1))
-    end
+    -- Применяем тему
+    applyTheme()
     
-    local fragments = {}
-    local colors_array = {}
-    local last_pos = 1
+    -- Регистрируем команду
+    sampRegisterChatCommand('chelper', function()
+        main_window[0] = not main_window[0]
+    end)
     
-    for color, inner_text in text:gmatch('{(......)}([^{]*)') do
-        table.insert(colors_array, color_func('{'..color..'}'))
-        table.insert(fragments, inner_text)
-    end
+    notify('Успешно загружен! Команда: /chelper', 0x00FF00)
+    notify('Автор: @MarkusGarantor (telegram)', 0x00FFFF)
     
-    for i, fragment in ipairs(fragments) do
-        imgui.TextColored(colors_array[i], fragment)
-        if i < #fragments then
-            imgui.SameLine(nil, 0)
-        end
-    end
+    wait(-1)
 end
