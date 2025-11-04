@@ -181,7 +181,112 @@ function performLogout() {
   }
 }
 
-// Слушаем сообщения от popup
+// Функция для заполнения формы заказа
+function fillOrderForm(link, quantity = 100) {
+  console.log('[LookSMM Auto-Fill] Заполняем форму заказа...');
+  
+  // Ищем поле для ссылки
+  const linkInputs = document.querySelectorAll(
+    'input[name*="link" i], input[name*="url" i], input[placeholder*="ссылк" i], ' +
+    'input[placeholder*="link" i], input[id*="link" i], input[type="text"], input[type="url"]'
+  );
+  
+  // Ищем поле количества
+  const quantityInputs = document.querySelectorAll(
+    'input[name*="quantity" i], input[name*="amount" i], input[name*="count" i], ' +
+    'input[placeholder*="количество" i], input[placeholder*="quantity" i], input[type="number"]'
+  );
+  
+  let filled = false;
+  
+  // Заполняем ссылку
+  if (linkInputs.length > 0) {
+    // Находим первое видимое поле
+    for (let input of linkInputs) {
+      if (input.offsetParent !== null) { // Проверяем, что элемент видим
+        input.value = link;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log('[LookSMM Auto-Fill] Ссылка заполнена:', link);
+        filled = true;
+        break;
+      }
+    }
+  }
+  
+  // Заполняем количество
+  if (quantityInputs.length > 0) {
+    for (let input of quantityInputs) {
+      if (input.offsetParent !== null) {
+        input.value = quantity;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log('[LookSMM Auto-Fill] Количество заполнено:', quantity);
+        filled = true;
+        break;
+      }
+    }
+  }
+  
+  if (filled) {
+    // Ждем немного и нажимаем кнопку
+    setTimeout(() => {
+      clickSubmitButton();
+    }, 1000);
+    
+    return { success: true };
+  } else {
+    console.log('[LookSMM Auto-Fill] Поля формы заказа не найдены');
+    return { success: false, message: 'Поля формы не найдены' };
+  }
+}
+
+// Функция для нажатия кнопки "Получить" или "Submit"
+function clickSubmitButton() {
+  console.log('[LookSMM Auto-Fill] Ищем кнопку отправки...');
+  
+  const buttonTexts = [
+    'получить',
+    'заказать',
+    'отправить',
+    'submit',
+    'order',
+    'send',
+    'добавить'
+  ];
+  
+  const buttons = document.querySelectorAll('button, input[type="submit"], a.btn, .button');
+  
+  for (let button of buttons) {
+    if (button.offsetParent === null) continue; // Пропускаем невидимые кнопки
+    
+    const buttonText = button.textContent.toLowerCase().trim();
+    const buttonValue = (button.value || '').toLowerCase().trim();
+    
+    for (let text of buttonTexts) {
+      if (buttonText.includes(text) || buttonValue.includes(text)) {
+        console.log('[LookSMM Auto-Fill] Кнопка найдена, нажимаем...');
+        button.click();
+        return true;
+      }
+    }
+  }
+  
+  // Если не нашли, пробуем submit кнопки
+  const submitButtons = document.querySelectorAll('button[type="submit"], input[type="submit"]');
+  for (let button of submitButtons) {
+    if (button.offsetParent !== null) {
+      console.log('[LookSMM Auto-Fill] Нажимаем submit кнопку...');
+      button.click();
+      return true;
+    }
+  }
+  
+  console.log('[LookSMM Auto-Fill] Кнопка отправки не найдена');
+  return false;
+}
+
+// Слушаем сообщения от popup и background
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('[LookSMM Auto-Fill] Получено сообщение:', request.action);
   
@@ -191,6 +296,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'logout') {
     performLogout();
     sendResponse({ success: true });
+  } else if (request.action === 'fillOrderForm') {
+    const result = fillOrderForm(request.link, request.quantity || 100);
+    sendResponse(result);
+  } else if (request.action === 'fillFormAndGoToOrder') {
+    // Сначала заполняем форму регистрации
+    const result = autoFillForm();
+    if (result.success) {
+      // После успешной регистрации, сохраняем URL для перехода
+      chrome.storage.local.set({ 
+        pendingOrderUrl: request.orderUrl,
+        pendingOrderLink: request.link,
+        pendingOrderService: request.service
+      });
+    }
+    sendResponse(result);
   }
   
   return true; // Асинхронный ответ

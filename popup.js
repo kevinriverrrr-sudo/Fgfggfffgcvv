@@ -2,6 +2,10 @@
 
 // Элементы DOM
 const startBtn = document.getElementById('startBtn');
+const telegramAccountBtn = document.getElementById('telegramAccountBtn');
+const vkAccountBtn = document.getElementById('vkAccountBtn');
+const telegramLinkInput = document.getElementById('telegramLink');
+const vkLinkInput = document.getElementById('vkLink');
 const logoutBtn = document.getElementById('logoutBtn');
 const exportBtn = document.getElementById('exportBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -199,6 +203,70 @@ logoutBtn.addEventListener('click', async () => {
   }
 });
 
+// Обработчик кнопки "Telegram + Account"
+telegramAccountBtn.addEventListener('click', async () => {
+  try {
+    const link = telegramLinkInput.value.trim();
+    
+    if (!link) {
+      showNotification('❌ Введите ссылку Telegram', true);
+      return;
+    }
+    
+    // Сохраняем ссылку
+    await chrome.storage.local.set({ telegramLink: link });
+    
+    // Отправляем команду в background script
+    chrome.runtime.sendMessage({
+      action: 'createAccountAndOrder',
+      service: 'telegram',
+      link: link,
+      serviceUrl: 'https://looksmm.ru/order/free-service/1530'
+    }, (response) => {
+      if (response && response.success) {
+        showNotification('✅ Процесс запущен! Следите за вкладкой...');
+      } else {
+        showNotification('❌ ' + (response?.message || 'Ошибка запуска'), true);
+      }
+    });
+    
+  } catch (error) {
+    showNotification('❌ Ошибка: ' + error.message, true);
+  }
+});
+
+// Обработчик кнопки "VK + Account"
+vkAccountBtn.addEventListener('click', async () => {
+  try {
+    const link = vkLinkInput.value.trim();
+    
+    if (!link) {
+      showNotification('❌ Введите ссылку VK', true);
+      return;
+    }
+    
+    // Сохраняем ссылку
+    await chrome.storage.local.set({ vkLink: link });
+    
+    // Отправляем команду в background script
+    chrome.runtime.sendMessage({
+      action: 'createAccountAndOrder',
+      service: 'vk',
+      link: link,
+      serviceUrl: 'https://looksmm.ru/order/free-service/1531'
+    }, (response) => {
+      if (response && response.success) {
+        showNotification('✅ Процесс запущен! Следите за вкладкой...');
+      } else {
+        showNotification('❌ ' + (response?.message || 'Ошибка запуска'), true);
+      }
+    });
+    
+  } catch (error) {
+    showNotification('❌ Ошибка: ' + error.message, true);
+  }
+});
+
 // Обработчик кнопки "Экспортировать"
 exportBtn.addEventListener('click', exportAccounts);
 
@@ -218,6 +286,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 // Инициализация при загрузке
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   displayAccounts();
+  
+  // Загружаем сохраненные ссылки
+  const data = await chrome.storage.local.get(['telegramLink', 'vkLink']);
+  if (data.telegramLink) {
+    telegramLinkInput.value = data.telegramLink;
+  }
+  if (data.vkLink) {
+    vkLinkInput.value = data.vkLink;
+  }
 });
