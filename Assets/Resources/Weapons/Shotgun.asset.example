@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: weapondata-guid-here, type: 3}
+  m_Name: Shotgun
+  weaponName: Remington 870
+  weaponId: shotgun_remington870
+  weaponType: 3
+  weaponPrefab: {fileID: 0}
+  damage: 15
+  fireRate: 0.8
+  range: 20
+  baseSpread: 0.15
+  recoil: 8
+  recoilRecovery: 5
+  ammoType: 2
+  magazineSize: 8
+  startingAmmo: 32
+  reloadTime: 3.0
+  pelletsPerShot: 8
+  muzzleFlashPrefab: {fileID: 0}
+  fireSound: {fileID: 0}
+  reloadSound: {fileID: 0}
+  dryFireSound: {fileID: 0}
