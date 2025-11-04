@@ -1,0 +1,20 @@
+{
+  "name": "background-remover",
+  "version": "1.0.0",
+  "description": "Современный веб-сайт для удаления фона с изображений",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "background-removal",
+    "image-processing",
+    "ai",
+    "photo-editor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
